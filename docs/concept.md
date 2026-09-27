@@ -2,32 +2,31 @@
 
 ## 1. IMP als persönliche Steuerungsebene
 
-IMP liegt **über** bestehenden operativen Systemen.
+IMP ist zuerst der **digitale Ersatz für den klassischen Schmierzettel** – mit der Fähigkeit, Einträge später zu ordnen, zu filtern, zu bündeln und zu priorisieren.
+
+IMP liegt über bestehenden operativen Systemen.
 
 ```text
-                    IMP
-          Ziele / Fokus / Prioritäten
-                  /   |   \
-                 /    |    \
-              Jira  Outlook  Teams
-                \      |      /
-                 \  Kalender /
-                   Git / Files
+schnell erfassen
+      ↓
+   Arbeitsgraph
+      ↓
+ordnen / filtern / bündeln
+      ↓
+Tages- oder Sprint-Auswahl
+      ↓
+bei Bedarf Übergabe/Verweis
+      ↓
+Jira / Outlook / Teams / Kalender / Git
 ```
 
-Die Frage der operativen Systeme lautet typischerweise:
-
-> Was ist in diesem System zu tun?
-
-Die zentrale Frage von IMP lautet:
-
-> Was verdient über alle Kontexte hinweg jetzt meine Aufmerksamkeit – und warum?
+Die operative Arbeit bleibt dort, wo sie hingehört. IMP bildet die persönliche Steuerungsebene.
 
 ## 2. Der digitale Schreibtischzettel
 
-IMP soll den klassischen Zettel nicht abschaffen, sondern seine Stärke erhalten: extrem niedrige Erfassungshürde.
+Die Stärke des Papierzettels bleibt erhalten: extrem niedrige Erfassungshürde.
 
-Eine Inbox darf deshalb zunächst heterogen sein.
+Eine Inbox darf zunächst heterogen sein.
 
 Beim Review wird ein Eintrag geklärt:
 
@@ -38,20 +37,80 @@ Inbox
   +--> Next Action
   +--> Commitment
   +--> Warten auf
-  +--> Termin / externer Verweis
-  +--> Vorgang
-  +--> löschen / archivieren
+  +--> externer Verweis
+  +--> Vorgang / Paket
+  +--> weiter ungeklärt
 ```
 
-Wichtig: Ideen erhalten keine künstlichen Fälligkeitstermine.
+Nichts muss verschwinden, nur weil es heute nicht bearbeitet wird.
 
-## 3. Kontextdimensionen
+## 3. Pool statt ewiger Tagesliste
 
-Ein Item besitzt keine einzige starre Schublade.
+IMP trennt drei Ebenen:
+
+```text
+INBOX
+neu und ungeklärt
+
+POOL
+alles weiterhin Relevante
+├─ Ideen
+├─ offene Actions
+├─ Vorgänge
+├─ Warten auf
+└─ Commitments
+
+SPRINT
+bewusste Auswahl für heute / den nächsten Arbeitstag
+```
+
+Nicht erledigte Items bleiben im Pool. Sie werden nicht automatisch als Altlasten auf jede neue Tagesliste kopiert.
+
+## 4. Ideenmanagement und Arbeitsmanagement
+
+IMP ist beides:
+
+1. persönliches Arbeitsmanagement
+2. Ideen-/Opportunity-Management
+
+Eine Idee ist keine schwache Aufgabe.
+
+```text
+Idee
+  ↓
+konkretisieren
+  ↓
+mit anderen Items bündeln
+  ↓
+Vorgang / Paket
+  ↓
+Action / Commitment
+```
+
+Sie darf aber ebenso dauerhaft Idee bleiben.
+
+## 5. Arbeitsgraph
+
+IMP modelliert seine Inhalte als Graph.
+
+```text
+[Item]
+  ├─ Organisation → FKM
+  ├─ Funktion     → IT
+  ├─ Thema        → KI
+  ├─ Tag          → mit-ds-besprechen
+  ├─ part_of      → AI-Infrastruktur
+  ├─ depends_on   → anderes Item
+  └─ source       → Jira / Outlook / Git
+```
+
+Eine Baumstruktur ist lediglich eine mögliche Sicht auf diesen Graphen.
+
+## 6. Kontextdimensionen
 
 ### Organisation
 
-Wem bzw. welchem organisatorischen Kontext gehört das Thema?
+Wo gehört das Thema organisatorisch hin?
 
 Beispiele:
 
@@ -60,9 +119,9 @@ Beispiele:
 - Familie
 - Selbst
 
-### Rolle
+### Funktion
 
-In welcher Funktion wird das Thema bearbeitet?
+In welcher Funktion wird daran gearbeitet?
 
 Beispiele:
 
@@ -73,24 +132,38 @@ Beispiele:
 - Technik
 - Privat
 
-### Bereich
+### Thema
 
-Welche fachlichen/domänenspezifischen Gebiete betrifft das Thema?
+Worum geht es fachlich?
 
 Beispiele:
 
-- AI
+- KI
 - Infrastruktur
-- Informationssicherheit
+- VPN
+- Website
+- idPlan
 - Personal
-- Organisation
-- Digitalisierung
 
-Bereiche sind ausdrücklich **n:m**. Ein Item kann mehreren Bereichen angehören.
+Themen sind relativ stabil und gepflegt.
 
-## 4. Zerlegen und Zusammenführen
+### Tags
 
-IMP muss Arbeit in beide Richtungen strukturieren können.
+Freie situative Marker.
+
+Beispiele:
+
+- mit-ds-besprechen
+- kurz
+- lesen
+- delegierbar
+- später
+
+Alle Dimensionen sind n:m.
+
+## 7. Zerlegen und Pakete schnüren
+
+IMP strukturiert in beide Richtungen.
 
 ### Decompose
 
@@ -109,38 +182,49 @@ lose Idee
 lose Aufgabe
 offene Frage
       \
-       -> gemeinsamer Vorgang
+       -> gemeinsamer Vorgang / Paket
 ```
 
-Gerade beim bottom-up entstehenden Arbeiten ist Consolidate ein Kernfall: Erst entstehen einzelne Notizen oder Aktionen, später wird der gemeinsame Vorgang sichtbar.
+Das Paket ist selbst ein Knoten im Arbeitsgraphen und kein bloßer Ordner.
 
-## 5. Persönlicher Fokus
+## 8. Tagesplanung als persönlicher Sprint
 
-IMP soll nicht automatisch alles Fällige und alles Interessante auf eine Tagesliste kippen.
+Abends oder morgens wird aus dem Pool bewusst der nächste Sprint zusammengestellt.
 
-Eine sinnvolle Trennung ist:
+Dabei sollen sichtbar sein:
+
+- harte Commitments und Termine,
+- offene Vorgänge ohne Next Action,
+- Wiedervorlagen,
+- aktuelle Fokusthemen,
+- bewusst ausgewählte Ideen oder kleine Actions.
+
+Der Sprint bleibt klein. Nicht ausgewählte Items bleiben erhalten.
+
+```text
+Arbeitsgraph / Pool
+        ↓
+Review
+        ↓
+1–3 Hauptthemen
++ wenige weitere Actions
+        ↓
+nächster Sprint
+```
+
+## 9. Bestehende Systeme
 
 ```text
 Source-Systeme -> Was existiert?
-IMP            -> Was ist wichtig?
-Kalender       -> Wann?
+IMP            -> Was ist jetzt relevant?
+Kalender       -> Wann wird es getan?
 ```
 
-Mögliche Fokusansichten:
+IMP ersetzt Jira, Outlook, Teams, Kalender oder Git nicht.
 
-- Heute
-- Diese Woche
-- FKM / GF
-- FKM / IT
-- Blöcher / IT
-- Familie
-- Selbst
-- Ideen
-- Warten auf
-- ohne Next Action
-- Commitments mit Termin
+Externe Systeme bleiben Source of Truth und werden referenziert statt vollständig dupliziert.
 
-## 6. Methoden als Bausteine
+## 10. Methoden als Bausteine
 
 IMP übernimmt keine Selbstmanagementmethode vollständig.
 
@@ -150,19 +234,38 @@ Nützliche Mechanismen:
 - **Kanban:** Work-in-Progress begrenzen
 - **MIT / Ivy Lee:** wenige bewusste Tagesprioritäten
 - **Time Blocking:** Ausführung im Kalender
-- **PARA:** Inspiration für Ablage, nicht als primäres Arbeitsmodell
-- **Weekly Review:** aktive Vorgänge und Fokus regelmäßig neu bestimmen
+- **Weekly Review:** Pool und Fokus regelmäßig neu bewerten
 
-## 7. Nicht-Ziele
+## 11. Speicherung und Anwendung
 
-IMP soll zunächst ausdrücklich **nicht** werden:
+Führende Daten bleiben Markdown/YAML in Git-basierten Data-Repositories.
+
+Mehrere Repositories erlauben unterschiedliche Berechtigungs- und Kollaborationsräume.
+
+Eine interne Anwendung darf daraus einen Datenbankindex für Suche, Filter, Graph-Navigation und Views erzeugen.
+
+```text
+Data-Repositories
+      ↓
+Parser / Indexer
+      ↓
+SQLite / PostgreSQL
+      ↓
+Web-UI / CLI / Agenten
+```
+
+Die Datenbank bleibt zunächst rekonstruierbar und nicht Source of Truth.
+
+## 12. Nicht-Ziele
+
+IMP soll zunächst ausdrücklich nicht werden:
 
 - Jira-Ersatz
 - Team-Projektmanagement-Suite
 - Kalender
 - Dokumentenmanagement
-- Wissensdatenbank
-- universeller Workflow-Engine
+- Wissenswiki
+- universelle Workflow-Engine
 - weitere isolierte To-do-App
 
-Der Wert entsteht durch die dünne Verbindungsschicht zwischen persönlicher Steuerung und bestehenden Systemen.
+Der Wert liegt in der dünnen persönlichen Steuerungs- und Strukturierungsschicht über einem heterogenen Arbeitsvorrat.
