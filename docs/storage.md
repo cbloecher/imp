@@ -1,128 +1,56 @@
 # Storage und Berechtigungen
 
-## 1. Keine zentrale Datenbank
+## 1. PostgreSQL als führende IMP-Datenbasis
 
-IMP soll zunächst ohne zentrale Datenbank funktionieren.
+Der PoC startet mit PostgreSQL und FastAPI. IMP-eigene Items, Kontextknoten,
+Zuordnungen, Beziehungen und Source-Verweise liegen dauerhaft in PostgreSQL.
+Die Datenbank ist kein rekonstruierbarer Index hinter Markdown/YAML.
 
-Daten liegen als Markdown/YAML in Git-Repositories.
+Externe Systeme bleiben Source of Truth für ihre operativen Inhalte. IMP ist
+führend nur für den eigenen persönlichen Steuerungskontext.
 
-Vorteile:
+## 2. Anwendung, Daten und Integrationen
 
-- menschenlesbar
-- diffbar
-- versioniert
-- offline nutzbar
-- mit einfachen Unix-Werkzeugen bearbeitbar
-- gut für Agenten und Code-Assistenten zugänglich
-- keine zusätzliche Datenbankadministration
+Das Repository `imp` enthält Anwendungscode, Schemaentwürfe und Dokumentation.
+Laufende Nutzdaten und Zugangsdaten gehören nicht ins Code-Repository.
+FastAPI kapselt Datenzugriff und Anwendungsregeln. Integrationen werden als
+separate Adapter entwickelt; der erste PoC enthält keine Integrationen.
+Vue/Bootstrap ist die bevorzugte, noch nicht implementierte Frontend-Richtung.
 
-## 2. Mehrere Data-Repositories
+## 3. Berechtigungsräume bleiben offen
 
-IMP unterscheidet zwischen Anwendung und Daten.
+Die bisherige Data-Repo-Grenze wird nicht als Datenbank-Berechtigungsmodell übernommen.
+Organisation, Funktion, Thema und Tag bleiben fachliche n:m-Zuordnungen und sind
+nicht automatisch Zugriffsrechte.
 
-Beispiel:
+Offen sind Authentifizierung (z. B. Keycloak/AD), Autorisierung, persönliche und
+geteilte Räume, Mandanten sowie Sichtbarkeit von Beziehungen über Raumgrenzen.
+Der PoC ist ein lokaler Einzelbenutzertest ohne Authentifizierung und wird nur
+an Loopback gebunden. Er darf nicht mit vertraulichen Produktionsdaten betrieben werden.
 
-```text
-imp                 # Anwendung, Schema, CLI, Views
+## 4. Identität und Schreibmodell
 
-imp-data-private    # nur persönlich
-imp-data-fkm-it     # Zusammenarbeit IT
-imp-data-fkm-hr     # kleiner Berechtigtenkreis
-imp-data-fkm-strat  # Strategie / GF
-imp-data-bloecher   # Giesserei
-imp-data-family     # Familie
-```
+Knoten behalten eine stabile technische Identität beim Umbenennen. Der PoC nutzt UUIDs.
+Schreibzugriffe erfolgen über FastAPI in PostgreSQL-Transaktionen. Fremdschlüssel
+verhindern Beziehungen zu nicht existierenden Knoten; doppelte identische Kanten
+werden zurückgewiesen. Konkurrenzregeln, Audit und Versionskontrolle sind offen.
 
-Die konkrete Aufteilung ist nicht vorgeschrieben.
+Ein Item hat eine führende IMP-Identität und wird über Beziehungen mehrfach zugeordnet,
+nicht pro Kontext dupliziert. Wechsel von Berechtigungsräumen ist erst nach deren
+Definition zu spezifizieren; ein Git-Repo-Wechsel ist kein aktuelles Schreibmodell.
 
-## 3. Repo-Grenze als Vertrauensraum
+## 5. Sicherung, Austausch und Wiederherstellung
 
-Ein Data-Repo bildet primär einen **Berechtigungs- und Kollaborationsraum**.
+Die führende Datenbank erfordert Backups und geprüfte Wiederherstellung.
+Der PoC nutzt ein persistentes Docker-Volume; es ist kein Backup.
+Backup-/Restore-Prozess, Aufbewahrung und Betrieb sind vor einem produktiven Einsatz zu klären.
 
-Damit entscheidet nicht die Fachhierarchie über das Repository, sondern:
+Markdown/YAML-Import und -Export sind spätere Optionen. Exportdateien sind keine
+parallele Schreibquelle. Ein möglicher Suchindex bleibt abgeleitet; die PostgreSQL-
+Primärdaten lassen sich nicht allein aus dem Anwendungscode rekonstruieren.
 
-- wer darf lesen?
-- wer darf schreiben?
-- mit wem wird gemeinsam gearbeitet?
-- welche Inhalte dürfen gemeinsam versioniert werden?
+## 6. PoC und Ausbaugrenze
 
-Organisation, Rolle und Bereich bleiben trotzdem Metadaten auf Item-Ebene.
-
-## 4. Eindeutiger Owner eines Items
-
-Ein Item hat genau **ein führendes Data-Repository**.
-
-Dasselbe fachliche Item wird nicht in mehreren Repositories dupliziert.
-
-Andere Repositories referenzieren es lediglich.
-
-Beispiel:
-
-```yaml
-links:
-  - type: imp
-    repo: imp-data-fkm-it
-    id: FKM-IT-0042
-```
-
-Damit werden Synchronisationskonflikte vermieden.
-
-## 5. Verschieben zwischen Repositories
-
-Das Verschieben muss ein expliziter Anwendungsfall sein.
-
-Beispiel:
-
-```text
-private Idee
-    |
-    v
-offizieller FKM-IT-Vorgang
-```
-
-Dabei sollen erhalten bleiben:
-
-- stabile Identität oder nachvollziehbare Alias-Beziehung
-- Historie soweit sinnvoll
-- Links aus anderen Items
-- Herkunft
-
-Offen ist, ob die globale ID beim Repo-Wechsel unverändert bleibt oder über Alias/Redirect abgebildet wird.
-
-## 6. Persönliche Aggregation
-
-Die persönliche IMP-Instanz darf mehrere Data-Repositories lesen und daraus lokale Views erzeugen.
-
-```text
-imp-data-private ----\
-imp-data-fkm-it ------+
-imp-data-bloecher ----+--> persönlicher Index / Views
-imp-data-family ------+
-externe Systeme -----/
-```
-
-Der aggregierte Index ist **abgeleitet** und kann jederzeit neu aufgebaut werden.
-
-Er ist nicht Source of Truth.
-
-## 7. Schreibmodell
-
-Für den PoC gelten einfache Git-Semantiken:
-
-- Änderungen an Items sind normale Commits.
-- Gemeinsame Data-Repositories können Branch/PR-Workflows verwenden.
-- Persönliche Repositories können direkt geschrieben werden.
-- Konflikte werden über Git sichtbar statt durch versteckte Last-write-wins-Logik.
-
-## 8. Spätere Optionen
-
-Ohne Änderung am Grundmodell können später ergänzt werden:
-
-- lokaler Suchindex
-- SQLite als Cache, nicht als Source of Truth
-- Web-UI
-- REST/API
-- Hintergrund-Synchronisation
-- Connectoren für Jira, Outlook, Teams
-- Volltext- oder semantische Suche
-- Agenten, die Items klassifizieren, zerlegen oder konsolidieren
+[PoC-Umfang](poc.md) und [Start-/Testanleitung](../backend/README.md) beschreiben den
+kleinen vertikalen Schnitt. Migrationen, Frontend, Rechteverwaltung, Synchronisation,
+Volltextsuche und Agentenunterstützung folgen erst nach gesonderter Entscheidung.

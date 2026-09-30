@@ -27,13 +27,13 @@ Parent/Child bleibt möglich, ist aber nur **eine spezielle Relation** im Graphe
   └─ source       → [Jira/Outlook/Git/...]
 ```
 
-Die führenden Daten bleiben dateibasiert in Markdown/YAML. Eine Datenbank darf für Suche, Aggregation und Views als **abgeleiteter Index** dienen.
+PostgreSQL ist die führende Speicherung für IMP-eigene Knoten, Beziehungen und Steuerungsdaten. Externe operative Daten bleiben in ihren Source-Systemen.
 
 ## 2. Identität
 
 Jedes Item benötigt eine stabile ID.
 
-Der Dateiname bzw. Slug darf sich ändern, ohne Referenzen zu brechen.
+Titel, Anzeigename bzw. Slug dürfen sich ändern, ohne Referenzen zu brechen.
 
 ```yaml
 id: FKM-IT-0042
@@ -48,9 +48,12 @@ Anforderungen:
 - unabhängig vom Dateipfad
 - maschinell validierbar
 
-Das endgültige globale ID-Schema über mehrere Data-Repositories hinweg ist noch festzulegen.
+Das endgültige ID-Schema und menschenlesbare Referenzen sind offen. UUIDs sind nur die vorläufige technische Identität im PoC.
 
-## 3. Minimales Item-Schema
+## 3. Fachlicher Schemaentwurf
+
+Die YAML-Beispiele illustrieren fachliche Attribute und sind weder Speicherformat noch
+verbindliches API-/Tabellenschema. Nicht alle Attribute werden im ersten PoC umgesetzt.
 
 ```yaml
 ---
@@ -154,7 +157,9 @@ Beispiele:
 
 Tags dürfen deutlich lockerer entstehen als Themen.
 
-Alle vier Dimensionen sind **n:m**.
+Alle vier Dimensionen sind **n:m**. Kontextknoten haben eine eigene stabile Identität.
+Tags werden als wiederverwendbare Lookup-Knoten geführt: Umbenennen ändert den
+Anzeigenamen, nicht die Zuordnungen. Der PoC prüft dieses Verhalten.
 
 ## 6. Relationen zwischen Items
 
@@ -269,72 +274,31 @@ source:
 
 IMP speichert nur die Informationen, die für persönliche Steuerung notwendig sind.
 
-## 12. Dateiformat und Markdown-Body
+## 12. Text, Austausch und Artefakte
 
-Ein Item liegt primär als Markdown-Datei mit YAML-Frontmatter vor.
+Freier Kontext-/Notiztext kann als Markdown in PostgreSQL gespeichert werden.
+Markdown/YAML-Dateien sind mögliche Import-/Exportformate, keine führenden Item-Dateien.
+Lokale Artefakte und ihre Ablage sind noch zu klären; sie bestimmen nicht die Graphstruktur.
 
-Für maschinell gepflegte Abschnitte werden stabile Marker vorgesehen:
+## 13. Relationale Speicherung des Arbeitsgraphen
 
-```md
-# AI-Infrastruktur produktionsreif machen
+Eine Graphdatenbank ist für den PoC nicht erforderlich. PostgreSQL kann stabile Knoten
+und typisierte Kanten mit Fremdschlüsseln speichern. Mehrfachzuordnung, `part_of`,
+Abhängigkeiten sowie Beziehungen zwischen Kontextknoten bleiben fachlich erhalten.
 
-## Kontext
+Der erste PoC verwendet vorläufig `nodes`, `edges` und `source_refs`. Er prüft nur:
+Erfassen, Lesen, Umbenennen von Kontextknoten, n:m-Beziehungen und externe Verweise.
+Die vollständige Trennung in Item-/Kontexttabellen, Status, Termine, Sprint-Auswahl,
+Historie und fachliche Kantenregeln ist noch nicht entschieden. Siehe [PoC](poc.md).
 
-Freier Text.
+## 14. Offene Modellentscheidungen
 
-<!-- IMP:BEGIN next -->
-- Traefik prüfen
-- Monitoring vervollständigen
-<!-- IMP:END next -->
+- Detail-Schema einschließlich Pflichtfeldern, Typen, Status und Zeitfeldern
+- Richtung, erlaubte Endpunkte, Zyklen und Invarianten der Relationstypen
+- Identität und Änderungen von externen Verweisen sowie Synchronisationskonflikte
+- Darstellung und Speicherung persönlicher Sprint-Auswahl
+- Berechtigungsräume und Sichtbarkeit von Knoten und Beziehungen
+- Schema-Migrationen und Änderungs-/Audit-Historie
 
-## Notizen
-
-Freier Text.
-```
-
-Damit können einfache Werkzeuge per `sed`, `awk`, Python oder Agent Inhalte gezielt zwischen Markern ändern.
-
-## 13. Dateien statt Ordner pro Item
-
-Standardfall:
-
-```text
-items/ai-infrastruktur-produktionsreif.md
-```
-
-Ein eigener Ordner pro Item ist nur nötig, wenn lokale Artefakte dazugehören.
-
-Fachliche Struktur wird durch den Graphen erzeugt, nicht durch den Dateipfad.
-
-## 14. Datenbank als abgeleiteter Index
-
-Eine interne IMP-Anwendung darf den Arbeitsgraphen in SQLite oder PostgreSQL materialisieren.
-
-Beispiel:
-
-```text
-items
-organisations
-functions
-topics
-tags
-relations
-
-item_organisations
-item_functions
-item_topics
-item_tags
-```
-
-Die Datenbank dient:
-
-- Filterung
-- Volltextsuche
-- Graph-Navigation
-- Aggregation mehrerer Data-Repositories
-- Tages-/Sprint-Views
-- berechneten Hinweisen
-
-Sie ist zunächst **nicht Source of Truth**. Der Index muss aus den Data-Repositories neu aufgebaut werden können.
-
-Eine echte Graphdatenbank ist für den PoC nicht erforderlich.
+Die generische PoC-Kante erlaubt auch Kontextbeziehungen. Sie enthält noch keine
+fachliche Semantikprüfung; daraus folgt keine Freigabe beliebiger Relationen im Zielsystem.
