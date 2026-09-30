@@ -1,6 +1,8 @@
 # Beispiele
 
 Die Beispiele zeigen bewusst unterschiedliche Verbindlichkeitsgrade und Beziehungen.
+YAML ist hier eine fachliche Illustration, keine führende Speicherung und kein
+PoC-API-Vertrag. PostgreSQL speichert IMP-eigene Daten.
 
 ## Idee
 
@@ -13,10 +15,9 @@ type: idea
 status: open
 
 organisations: [fkm]
-roles: [strategy]
-areas: [digitalisation, software-modernisation]
+functions: [strategy]
+topics: [digitalisation, software-modernisation]
 
-parent:
 due:
 review_after: 2026-10-15
 ---
@@ -35,10 +36,12 @@ type: action
 status: active
 
 organisations: [fkm]
-roles: [it]
-areas: [ai, infrastructure, security]
+functions: [it]
+topics: [ai, infrastructure, security]
 
-parent: EX-0003
+relations:
+  - type: part_of
+    target: EX-0003
 due:
 ---
 ```
@@ -54,14 +57,13 @@ type: process
 status: active
 
 organisations: [fkm]
-roles: [it, strategy]
-areas: [ai, infrastructure, security]
+functions: [it, strategy]
+topics: [ai, infrastructure, security]
 
-parent:
 ---
 ```
 
-`EX-0002` ist über `parent` diesem Vorgang zugeordnet.
+`EX-0002` ist über `part_of` diesem Vorgang zugeordnet.
 
 ## Harte Verpflichtung
 
@@ -74,8 +76,8 @@ type: commitment
 status: active
 
 organisations: [fkm]
-roles: [hr]
-areas: [personnel]
+functions: [hr]
+topics: [personnel]
 
 due: 2026-10-02
 ---
@@ -94,8 +96,8 @@ type: action
 status: active
 
 organisations: [fkm]
-roles: [strategy]
-areas: [software-modernisation]
+functions: [strategy]
+topics: [software-modernisation]
 
 source:
   system: jira
@@ -123,4 +125,4 @@ kann beim Review ein gemeinsamer Vorgang entstehen:
 AI-Infrastruktur produktionsreif machen
 ```
 
-Die Einzelitems erhalten anschließend dessen ID als `parent`.
+Die Einzelitems erhalten anschließend eine `part_of`-Relation zu diesem Vorgang.

@@ -238,23 +238,22 @@ Nützliche Mechanismen:
 
 ## 11. Speicherung und Anwendung
 
-Führende Daten bleiben Markdown/YAML in Git-basierten Data-Repositories.
+PostgreSQL speichert den IMP-eigenen Arbeitsgraphen dauerhaft. FastAPI bildet den
+Anwendungskern mit Validierung und transaktionalen Schreibzugriffen. Vue/Bootstrap
+ist die bevorzugte Frontend-Richtung; Darstellung und Komponenten bleiben offen.
 
-Mehrere Repositories erlauben unterschiedliche Berechtigungs- und Kollaborationsräume.
+Externe Systeme bleiben für ihre operativen Daten führend. IMP speichert den
+persönlichen Steuerungskontext und Source-Verweise. Das ist kein vollständiger Spiegel.
 
-Eine interne Anwendung darf daraus einen Datenbankindex für Suche, Filter, Graph-Navigation und Views erzeugen.
+Connectoren für Jira, Outlook, Teams oder Git sind getrennte Integrationsadapter.
+Sie sollen über definierte Anwendungsgrenzen arbeiten und nicht direkt Tabellen verändern.
+Der erste PoC enthält keine Connectoren, Synchronisation oder externen Schreibzugriffe.
 
-```text
-Data-Repositories
-      ↓
-Parser / Indexer
-      ↓
-SQLite / PostgreSQL
-      ↓
-Web-UI / CLI / Agenten
-```
+Markdown/YAML kann später dem Import/Export dienen. Ein Export ist kein Ersatz für
+Datenbankbackup und keine zweite gleichberechtigte Schreibquelle.
 
-Die Datenbank bleibt zunächst rekonstruierbar und nicht Source of Truth.
+Authentifizierung, Autorisierung, Berechtigungsräume, Detail-Schema und Graph-Darstellung
+sind ausdrücklich offen. Der [erste PoC](poc.md) nimmt sie nicht vorweg.
 
 ## 12. Nicht-Ziele
 

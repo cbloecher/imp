@@ -25,9 +25,9 @@ IMP soll diese Arbeit **erfassen, strukturieren, zerlegen, zusammenführen und p
 3. **Source of Truth bleibt extern** – Jira-Tickets, Termine oder Team-Aufgaben werden referenziert, nicht kopiert.
 4. **Hierarchie und Graph** – Vorgänge können zerlegt und lose Items zu übergeordneten Vorgängen zusammengeführt werden.
 5. **Mehrfachzuordnung** – ein Item kann mehreren Bereichen, Rollen oder Kontexten angehören.
-6. **Dateibasiert statt Datenbank** – Markdown/YAML in Git bleibt lesbar, versionierbar und agentenfähig.
-7. **Repos sind Berechtigungsräume** – mehrere Data-Repositories erlauben unterschiedliche Mitwirkende und Sichtbarkeiten.
-8. **Persönliche Gesamtsicht** – IMP kann mehrere Repositories und externe Systeme zu einer persönlichen Steuerungsebene aggregieren.
+6. **PostgreSQL als Datenbasis** – IMP-eigene Items, Kontexte und Beziehungen werden dauerhaft in PostgreSQL gespeichert.
+7. **Anwendung und Integrationen trennen** – FastAPI stellt den Anwendungskern bereit; Connectoren bleiben separate Adapter.
+8. **Persönliche Gesamtsicht** – IMP verbindet eigenen Steuerungskontext mit Verweisen auf externe Systeme.
 
 ## Begriffe
 
@@ -40,6 +40,16 @@ IMP soll diese Arbeit **erfassen, strukturieren, zerlegen, zusammenführen und p
 - **Rolle** – Funktion, in der ein Item bearbeitet wird, z. B. GF, IT, Personal.
 - **Organisation** – organisatorischer Kontext, z. B. FKM, Giesserei Blöcher, Familie, Selbst.
 
+## Architekturstand
+
+Aktuelle Architekturentscheidung: Der PoC startet mit **PostgreSQL und FastAPI**.
+**Vue/Bootstrap** ist die bevorzugte Frontend-Richtung; ein Frontend ist noch nicht umgesetzt.
+PostgreSQL ist führend für IMP-eigene Daten; externe Systeme bleiben führend für ihre operativen Daten.
+Markdown/YAML ist ein mögliches Austauschformat, keine vorgeschriebene Primärspeicherung.
+
+Der [erste PoC](backend/README.md) prüft persistente Knoten, Beziehungen und externe Verweise über eine HTTP-API.
+Umfang und Abnahmekriterien stehen in [docs/poc.md](docs/poc.md).
+
 ## Erste Dokumente
 
 - [Konzept](docs/concept.md)
@@ -49,11 +59,10 @@ IMP soll diese Arbeit **erfassen, strukturieren, zerlegen, zusammenführen und p
 
 ## Noch bewusst offen
 
-- konkrete CLI-Syntax
-- Rendering/Views
-- Synchronisation mit externen Systemen
-- Priorisierungsalgorithmus
-- Agentenunterstützung
-- ID-Schema über mehrere Data-Repositories hinweg
+- Authentifizierung und Autorisierung (z. B. Keycloak/AD-Anbindung)
+- Berechtigungsräume, Mandanten und Zusammenarbeit
+- Graph-/Baum-Darstellung und Frontend-Komponenten
+- Detail-Schema, IDs, Relationenregeln und Migrationen
+- CLI, Synchronisation, Priorisierung und Agentenunterstützung
 
-Diese Punkte sollen aus dem Datenmodell abgeleitet werden, nicht umgekehrt.
+Die PoC-Tabellen und API sind vorläufige Implementierungsentscheidungen, kein finales Domänenschema.
