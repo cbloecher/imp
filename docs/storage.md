@@ -1,128 +1,170 @@
-# Storage und Berechtigungen
+# Storage, Quellen und Berechtigungen
 
-## 1. Keine zentrale Datenbank
+## 1. Grundsatz
 
-IMP soll zunächst ohne zentrale Datenbank funktionieren.
+IMP benötigt nicht eine einzige globale Datenquelle.
 
-Daten liegen als Markdown/YAML in Git-Repositories.
+Stattdessen können mehrere fachlich führende Quellen parallel existieren.
 
-Vorteile:
+Beispiele:
 
-- menschenlesbar
-- diffbar
-- versioniert
-- offline nutzbar
-- mit einfachen Unix-Werkzeugen bearbeitbar
-- gut für Agenten und Code-Assistenten zugänglich
-- keine zusätzliche Datenbankadministration
+- PostgreSQL / native IMP-Objekte
+- Jira
+- Outlook / Microsoft Graph
+- GitHub
+- YAML / Markdown in Git-Repositories
+- weitere SQL-Datenbanken
+- zukünftige Fachsysteme
 
-## 2. Mehrere Data-Repositories
+IMP führt diese Quellen lokal in PostgreSQL zu einem gemeinsamen Arbeitsgraphen zusammen.
 
-IMP unterscheidet zwischen Anwendung und Daten.
+## 2. PostgreSQL
 
-Beispiel:
+PostgreSQL ist die zentrale Laufzeitdatenbank der IMP-Anwendung.
 
-```text
-imp                 # Anwendung, Schema, CLI, Views
+Sie enthält:
 
-imp-data-private    # nur persönlich
-imp-data-fkm-it     # Zusammenarbeit IT
-imp-data-fkm-hr     # kleiner Berechtigtenkreis
-imp-data-fkm-strat  # Strategie / GF
-imp-data-bloecher   # Giesserei
-imp-data-family     # Familie
-```
+- native IMP-Items,
+- normalisierte Projektionen externer Objekte,
+- Organisationen, Funktionen, Themen und Tags,
+- Relationen,
+- Sprints,
+- IMP-Overlays,
+- Source- und Sync-Metadaten.
 
-Die konkrete Aufteilung ist nicht vorgeschrieben.
+PostgreSQL ist für native IMP-Objekte führend.
 
-## 3. Repo-Grenze als Vertrauensraum
+Für externe Objekte ist PostgreSQL dagegen die lokale Projektion und nicht automatisch deren fachliche Source of Truth.
 
-Ein Data-Repo bildet primär einen **Berechtigungs- und Kollaborationsraum**.
+## 3. Source Adapter
 
-Damit entscheidet nicht die Fachhierarchie über das Repository, sondern:
-
-- wer darf lesen?
-- wer darf schreiben?
-- mit wem wird gemeinsam gearbeitet?
-- welche Inhalte dürfen gemeinsam versioniert werden?
-
-Organisation, Rolle und Bereich bleiben trotzdem Metadaten auf Item-Ebene.
-
-## 4. Eindeutiger Owner eines Items
-
-Ein Item hat genau **ein führendes Data-Repository**.
-
-Dasselbe fachliche Item wird nicht in mehreren Repositories dupliziert.
-
-Andere Repositories referenzieren es lediglich.
-
-Beispiel:
-
-```yaml
-links:
-  - type: imp
-    repo: imp-data-fkm-it
-    id: FKM-IT-0042
-```
-
-Damit werden Synchronisationskonflikte vermieden.
-
-## 5. Verschieben zwischen Repositories
-
-Das Verschieben muss ein expliziter Anwendungsfall sein.
-
-Beispiel:
+Jede externe Quelle wird über einen Adapter angebunden.
 
 ```text
-private Idee
-    |
-    v
-offizieller FKM-IT-Vorgang
+GitHub -------\
+Jira ----------\
+Outlook --------+--> Adapter --> Canonical Model --> PostgreSQL
+YAML / Git -----/
+SQL -----------/
 ```
 
-Dabei sollen erhalten bleiben:
+Adapter kapseln quellspezifische Details und liefern ein gemeinsames Minimalmodell.
 
-- stabile Identität oder nachvollziehbare Alias-Beziehung
-- Historie soweit sinnvoll
-- Links aus anderen Items
-- Herkunft
+## 4. YAML / Git als vollwertige Quelle
 
-Offen ist, ob die globale ID beim Repo-Wechsel unverändert bleibt oder über Alias/Redirect abgebildet wird.
+Die frühere Idee mehrerer Data-Repositories bleibt möglich, ist aber nun **eine mögliche Source-Art unter mehreren**.
 
-## 6. Persönliche Aggregation
+Ein Git-/YAML-Repo kann weiterhin:
 
-Die persönliche IMP-Instanz darf mehrere Data-Repositories lesen und daraus lokale Views erzeugen.
+- gemeinsam bearbeitet werden,
+- Berechtigungsraum sein,
+- versionierte Items bereitstellen,
+- für Agenten gut lesbar sein.
+
+Es ist aber nicht mehr zwingend das globale Primärformat von IMP.
+
+## 5. Berechtigungsräume
+
+Berechtigungen können auf unterschiedlichen Ebenen entstehen:
+
+- Quellsystem selbst, z. B. GitHub/Jira
+- konkreter Connector bzw. dessen Service Account
+- IMP-interne Sichtbarkeit
+- Organisation/Funktion
+- zukünftige feinere ACLs
+
+IMP darf keine Objekte sichtbar machen, die der jeweilige Benutzer über die vorgesehene Berechtigungslogik nicht sehen darf.
+
+Das konkrete Autorisierungsmodell bleibt für den PoC noch offen.
+
+## 6. Provenance
+
+Jedes externe Objekt benötigt nachvollziehbare Herkunftsinformationen.
+
+Mindestens:
 
 ```text
-imp-data-private ----\
-imp-data-fkm-it ------+
-imp-data-bloecher ----+--> persönlicher Index / Views
-imp-data-family ------+
-externe Systeme -----/
+source_id
+external_id
+external_url / locator
+last_seen_at
+last_sync_at
+source_state
+source_hash (optional)
 ```
 
-Der aggregierte Index ist **abgeleitet** und kann jederzeit neu aufgebaut werden.
+Damit kann IMP erkennen, ob ein Eintrag:
 
-Er ist nicht Source of Truth.
+- aktuell,
+- länger nicht geprüft,
+- verschwunden,
+- fehlerhaft,
+- bewusst getrennt oder
+- an der Quelle gelöscht wurde.
 
-## 7. Schreibmodell
+## 7. Kein automatisches Löschen bei Abweichungen
 
-Für den PoC gelten einfache Git-Semantiken:
+Ein Quellobjekt darf nicht gelöscht werden, nur weil es bei einem Sync-Lauf fehlt.
 
-- Änderungen an Items sind normale Commits.
-- Gemeinsame Data-Repositories können Branch/PR-Workflows verwenden.
-- Persönliche Repositories können direkt geschrieben werden.
-- Konflikte werden über Git sichtbar statt durch versteckte Last-write-wins-Logik.
+Zuerst wird der Zustand markiert.
 
-## 8. Spätere Optionen
+```text
+active
+  ↓
+missing
+  ↓ erneute erfolgreiche Prüfung
+deleted / orphaned
+```
 
-Ohne Änderung am Grundmodell können später ergänzt werden:
+Connector-Ausfälle werden als `error` oder `stale` behandelt.
 
-- lokaler Suchindex
-- SQLite als Cache, nicht als Source of Truth
-- Web-UI
-- REST/API
-- Hintergrund-Synchronisation
-- Connectoren für Jira, Outlook, Teams
-- Volltext- oder semantische Suche
-- Agenten, die Items klassifizieren, zerlegen oder konsolidieren
+## 8. Reparatur
+
+Für verwaiste oder fehlerhafte Source-Verknüpfungen sind explizite Operationen vorgesehen:
+
+- erneut prüfen
+- External ID korrigieren
+- neue Quelle zuordnen
+- Source-Verknüpfung lösen
+- als natives IMP-Item übernehmen
+- lokalen Eintrag entfernen
+
+IMP-eigene Overlays und Beziehungen sollen dabei möglichst erhalten bleiben.
+
+## 9. Schreibmodell
+
+Quellen können unterschiedliche Schreibfähigkeiten besitzen.
+
+Beispiele:
+
+```text
+GitHub Issue Connector  -> read/write
+Jira Connector          -> read/write oder read-only
+Outlook Calendar        -> read-only im ersten PoC
+YAML/Git                -> read/write
+SQL Reporting Source    -> read-only
+```
+
+Der Adapter deklariert seine Fähigkeiten.
+
+IMP darf nur dort zurückschreiben, wo dies fachlich gewollt und technisch erlaubt ist.
+
+## 10. Zielarchitektur
+
+```text
+             externe / interne Quellen
+      ┌────────┬────────┬────────┬────────┐
+      │ Jira   │ GitHub │ YAML   │ SQL    │
+      └────┬───┴───┬────┴───┬────┴───┬────┘
+           │       Source Adapter      │
+           └───────────┬───────────────┘
+                       ↓
+                  PostgreSQL
+             materialisierter Graph
+                       ↓
+                    FastAPI
+                       ↓
+               Vue 3 + Bootstrap
+```
+
+Damit bleibt IMP offen für unterschiedliche Datenhaltungsmodelle, ohne auf eine einheitliche Benutzeroberfläche und ein gemeinsames Arbeitsmodell zu verzichten.
