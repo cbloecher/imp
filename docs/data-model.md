@@ -2,110 +2,196 @@
 
 ## 1. Grundprinzip: Arbeitsgraph
 
-IMP modelliert Arbeit nicht primär als Baum, sondern als **Graph aus Items und Kontextknoten**.
+IMP modelliert Arbeit als **Graph aus Items, Kontextknoten und externen Source Objects**.
 
 Ein Item kann gleichzeitig:
 
 - zu einer oder mehreren Organisationen gehören,
-- in mehreren Funktionen/Rollen bearbeitet werden,
+- in mehreren Funktionen bearbeitet werden,
 - mehrere Themen betreffen,
-- freie Tags tragen,
+- mehrere Tags tragen,
 - Teil eines oder mehrerer Vorgänge/Pakete sein,
 - andere Items voraussetzen oder referenzieren,
-- auf externe Systeme wie Jira, Outlook oder Git verweisen.
+- auf externe Source Objects verweisen.
 
-Parent/Child bleibt möglich, ist aber nur **eine spezielle Relation** im Graphen.
+Parent/Child bleibt möglich, ist aber nur eine spezielle Relation im Graphen.
+
+## 2. Keine globale Source of Truth
+
+IMP unterscheidet zwischen:
+
+1. **nativen IMP-Objekten** – fachlich in IMP geführt,
+2. **externen Source Objects** – fachlich in einem anderen System geführt,
+3. **IMP Overlays** – persönliche Steuerungsdaten zu nativen oder externen Objekten.
+
+Damit kann PostgreSQL alle Objekte lokal zusammenführen, ohne externe Systeme fachlich zu ersetzen.
+
+## 3. Identität
+
+Jedes IMP-Item erhält eine stabile interne ID.
+
+Zusätzlich kann ein Source Object eine externe Identität besitzen.
+
+Beispiel:
+
+```yaml
+imp_id: 7fbb...
+source:
+  type: github
+  external_id: issue:123
+  locator: cbloecher/imp
+```
+
+Die interne IMP-ID darf nicht von Dateipfad, Titel oder externer ID abhängen.
+
+## 4. Kernobjekte
+
+Mindestens vorgesehen:
 
 ```text
-[Item]
-  ├─ organisation → [Organisation]
-  ├─ function     → [Funktion]
-  ├─ topic        → [Thema]
-  ├─ tag          → [Tag]
-  ├─ part_of      → [Vorgang/Paket]
-  ├─ depends_on   → [Item]
-  └─ source       → [Jira/Outlook/Git/...]
+items
+source_objects
+sources
+organisations
+functions
+topics
+tags
+relations
+sprints
+sprint_items
 ```
 
-Die führenden Daten bleiben dateibasiert in Markdown/YAML. Eine Datenbank darf für Suche, Aggregation und Views als **abgeleiteter Index** dienen.
+sowie n:m-Zuordnungen:
 
-## 2. Identität
-
-Jedes Item benötigt eine stabile ID.
-
-Der Dateiname bzw. Slug darf sich ändern, ohne Referenzen zu brechen.
-
-```yaml
-id: FKM-IT-0042
-slug: ai-infrastruktur-produktionsreif
+```text
+item_organisations
+item_functions
+item_topics
+item_tags
 ```
 
-Anforderungen:
+## 5. Item
 
-- stabil
-- eindeutig
-- kurz genug für manuelle Referenzen
-- unabhängig vom Dateipfad
-- maschinell validierbar
+Ein Item ist die lokale Arbeitsrepräsentation.
 
-Das endgültige globale ID-Schema über mehrere Data-Repositories hinweg ist noch festzulegen.
+Beispielhafte Felder:
 
-## 3. Minimales Item-Schema
-
-```yaml
----
-id: FKM-IT-0042
-slug: ai-infrastruktur-produktionsreif
-title: AI-Infrastruktur produktionsreif machen
-
-type: process
-status: active
-
-organisations:
-  - fkm
-
-functions:
-  - it
-  - strategy
-
-topics:
-  - ai
-  - infrastructure
-  - security
-
-tags:
-  - review
-
-relations:
-  - type: part_of
-    target: FKM-AI-0001
-
-due:
-review_after:
-
-source:
-links: []
----
+```text
+id
+title
+description
+type
+state
+due_at
+review_after
+created_at
+updated_at
+source_object_id?
 ```
 
-## 4. Item-Typen
+Initiale Typen:
 
-Initial vorgesehene Typen:
+- `idea`
+- `action`
+- `commitment`
+- `process`
+- `waiting`
+- `reference`
 
-- `idea` – interessant, aber unverbindlich
-- `action` – konkret ausführbarer nächster Schritt
-- `commitment` – verbindliche Aufgabe
-- `process` – Vorgang / übergeordnetes Thema
-- `waiting` – wartet auf externe Person, Ereignis oder System
-- `reference` – primär Verweis auf externen Sachverhalt
+Primärer Bearbeitungsstatus bleibt getrennt von horizontalen Merkmalen wie Delegation, Warten auf Antwort, Wiedervorlage oder Sprint-Zugehörigkeit.
 
-Die Typen bleiben bewusst klein. Zusätzliche Bedeutung entsteht durch Relationen und Metadaten.
+## 6. Source
 
-## 5. Kontextknoten
+Eine Source beschreibt ein angebundenes Quellsystem bzw. eine konkrete Quelle.
+
+Beispiele:
+
+- Jira-Instanz
+- GitHub-Repository
+- Outlook-/Graph-Connector
+- YAML-/Git-Repository
+- SQL-Datenquelle
+- IMP selbst
+
+Mögliche Felder:
+
+```text
+id
+type
+name
+config_reference
+writable
+enabled
+last_sync_at
+last_success_at
+```
+
+Geheimnisse oder Credentials gehören nicht direkt in diese Tabelle, sondern in eine geeignete Secret-/Konfigurationsverwaltung.
+
+## 7. Source Object
+
+Ein Source Object repräsentiert ein Objekt in einer externen Quelle.
+
+Beispielhafte Felder:
+
+```text
+id
+source_id
+external_id
+external_url
+external_type
+source_state
+last_seen_at
+last_sync_at
+source_hash
+raw_snapshot?
+```
+
+Die Kombination aus `source_id + external_id` muss eindeutig sein.
+
+## 8. Source State / Drift
+
+Mögliche Zustände:
+
+- `active`
+- `missing`
+- `stale`
+- `error`
+- `detached`
+- `deleted`
+
+Regeln:
+
+- Ein einmal fehlendes Objekt wird nicht sofort gelöscht.
+- `missing` darf nur nach erfolgreicher Abfrage der Quelle gesetzt werden.
+- Ein Connector-Fehler führt zu `error` oder `stale`, nicht zu `missing`.
+- `deleted` setzt eine hinreichend sichere Bestätigung voraus.
+- Lokale IMP-Overlays bleiben erhalten, solange sie nicht bewusst entfernt werden.
+
+## 9. IMP Overlay
+
+IMP-eigene Steuerungsdaten werden lokal geführt, auch wenn das Basisobjekt extern ist.
+
+Typische Overlay-Daten:
+
+- Organisation
+- Funktion
+- Thema
+- Tag
+- persönliche Priorität
+- Sprint-Zugehörigkeit
+- Wiedervorlage
+- persönliche Notiz
+- Delegationsinformation
+- lokale Beziehungen
+
+Damit kann z. B. ein Jira-Ticket fachlich in Jira geführt werden, während IMP zusätzliche persönliche Metadaten ergänzt.
+
+## 10. Kontextknoten
 
 ### Organisation
 
-Organisatorischer Kontext, z. B.:
+Beispiele:
 
 - FKM
 - Giesserei Blöcher
@@ -113,8 +199,6 @@ Organisatorischer Kontext, z. B.:
 - Selbst
 
 ### Funktion
-
-In welcher Funktion/Rolle wird ein Item bearbeitet?
 
 Beispiele:
 
@@ -127,54 +211,21 @@ Beispiele:
 
 ### Thema
 
-Stabile fachliche Zuordnung.
-
-Beispiele:
-
-- KI
-- Infrastruktur
-- VPN
-- idPlan
-- Personal
-- Website
-
-Themen sollen gepflegt und wiederverwendet werden.
+Relativ stabile fachliche Zuordnung.
 
 ### Tag
 
-Freier, situativer Marker.
+Freier situativer Marker, aber als referenziertes Lookup-Objekt mit stabiler ID.
+
+Tags können damit zentral umbenannt werden, ohne alle Items ändern zu müssen.
+
+Alle vier Dimensionen sind n:m.
+
+## 11. Relationen
+
+Relationen werden explizit modelliert.
 
 Beispiele:
-
-- mit-ds-besprechen
-- kurz
-- lesen
-- delegierbar
-- später
-
-Tags dürfen deutlich lockerer entstehen als Themen.
-
-Alle vier Dimensionen sind **n:m**.
-
-## 6. Relationen zwischen Items
-
-Hierarchische und nicht-hierarchische Beziehungen werden einheitlich als Relationen gedacht.
-
-Beispiele:
-
-```yaml
-relations:
-  - type: part_of
-    target: FKM-AI-0001
-
-  - type: depends_on
-    target: FKM-SEC-0011
-
-  - type: related
-    target: FKM-IT-0038
-```
-
-Mögliche Relationstypen:
 
 - `part_of`
 - `depends_on`
@@ -183,158 +234,74 @@ Mögliche Relationstypen:
 - `follows`
 - `derived_from`
 
-Für einfache Zerlegung kann `parent` zunächst als Kurzform von `part_of` unterstützt werden. Langfristig soll die Relation das kanonische Modell bilden.
+Ein Vorgang/Paket ist selbst ein Item bzw. Graphknoten.
 
-## 7. Graph auch zwischen Kontextknoten
+## 12. Tages-/Sprint-Auswahl
 
-Nicht nur Items können miteinander verbunden sein. Auch Kontextknoten dürfen Beziehungen besitzen.
+Ein Sprint ist eine gespeicherte Auswahl von Items.
 
-Beispiel:
-
-```text
-[FKM]
-  └─ function → [IT]
-                  └─ topic → [Infrastruktur]
-                                ├─ topic → [VPN]
-                                └─ topic → [KI]
-```
-
-Diese Beziehungen dienen Navigation, Vorschlägen und Filterung. Sie erzwingen keine Exklusivität: Das Thema `KI` kann gleichzeitig in mehreren Organisationen oder Funktionen relevant sein.
-
-## 8. Pakete und Vorgänge
-
-Ein Paket/Vorgang ist kein Ordnerzwang, sondern selbst ein Item bzw. Knoten im Arbeitsgraphen.
-
-Lose Items können später zusammengeführt werden:
+Beispielhafte Felder:
 
 ```text
-[VPN-Doku] ───────┐
-[Kamera Serverraum] ├─ part_of → [IT-Infrastruktur verbessern]
-[DNS-Doku] ───────┘
+sprints:
+  id
+  owner_person_id
+  date
+  state
+
+sprint_items:
+  sprint_id
+  item_id
+  position
+  kind   # focus | optional
 ```
 
-Ebenso kann ein Vorgang in Teilvorgänge und Actions zerlegt werden.
+Nicht ausgewählte Items bleiben im Pool erhalten.
 
-Damit unterstützt IMP beide Richtungen:
+## 13. Synchronisation
 
-- **Decompose** – Vorgang in ausführbare Schritte zerlegen
-- **Consolidate** – lose Gedanken/Aufgaben zu einem Vorgang bündeln
+Jeder Source Adapter normalisiert externe Objekte auf ein gemeinsames Minimalmodell.
 
-## 9. Tages-/Sprint-Auswahl als View
-
-Der nächste persönliche Sprint ist **kein eigener Datensilo**.
-
-Er ist eine bewusste Auswahl von Items aus dem Arbeitsgraphen.
-
-Beispiel:
-
-```yaml
-sprint:
-  date: 2026-09-28
-  focus:
-    - FKM-IT-0042
-    - FKM-HR-0017
-  optional:
-    - SELF-0011
-```
-
-Nicht gewählte Items bleiben im Pool erhalten und werden lediglich aus der aktuellen Tagesansicht ausgeblendet.
-
-## 10. Termine und Wiedervorlage
-
-Ein Fälligkeitsdatum wird nur verwendet, wenn tatsächlich eine zeitliche Verbindlichkeit besteht.
-
-```yaml
-due: 2026-10-02
-```
-
-Ideen oder unverbindliche Punkte erhalten keine künstlichen Deadlines.
-
-Für Wiedervorlage:
-
-```yaml
-review_after: 2026-11-01
-```
-
-## 11. Source of Truth
-
-Externe operative Systeme bleiben führend.
-
-```yaml
-source:
-  system: jira
-  ref: IDP-471
-  url: https://...
-```
-
-IMP speichert nur die Informationen, die für persönliche Steuerung notwendig sind.
-
-## 12. Dateiformat und Markdown-Body
-
-Ein Item liegt primär als Markdown-Datei mit YAML-Frontmatter vor.
-
-Für maschinell gepflegte Abschnitte werden stabile Marker vorgesehen:
-
-```md
-# AI-Infrastruktur produktionsreif machen
-
-## Kontext
-
-Freier Text.
-
-<!-- IMP:BEGIN next -->
-- Traefik prüfen
-- Monitoring vervollständigen
-<!-- IMP:END next -->
-
-## Notizen
-
-Freier Text.
-```
-
-Damit können einfache Werkzeuge per `sed`, `awk`, Python oder Agent Inhalte gezielt zwischen Markern ändern.
-
-## 13. Dateien statt Ordner pro Item
-
-Standardfall:
+Ein Adapter sollte konzeptionell mindestens unterstützen:
 
 ```text
-items/ai-infrastruktur-produktionsreif.md
+list / scan
+get
+sync metadata
+(optional) create
+(optional) update
+(optional) delete
 ```
 
-Ein eigener Ordner pro Item ist nur nötig, wenn lokale Artefakte dazugehören.
+Schreibfähigkeit ist pro Source ausdrücklich zu deklarieren.
 
-Fachliche Struktur wird durch den Graphen erzeugt, nicht durch den Dateipfad.
+## 14. Reparatur verwaister Einträge
 
-## 14. Datenbank als abgeleiteter Index
+IMP soll mindestens folgende Operationen unterstützen:
 
-Eine interne IMP-Anwendung darf den Arbeitsgraphen in SQLite oder PostgreSQL materialisieren.
+- Source erneut prüfen
+- External ID / Locator korrigieren
+- Source Object auf ein anderes externes Objekt umhängen
+- Source-Verknüpfung lösen
+- Item als natives IMP-Item weiterführen
+- lokalen Eintrag bewusst entfernen
 
-Beispiel:
+Diese Operationen müssen nachvollziehbar sein und dürfen vorhandene Overlays nicht unbeabsichtigt vernichten.
 
-```text
-items
-organisations
-functions
-topics
-tags
-relations
+## 15. PostgreSQL als materialisierter Arbeitsgraph
 
-item_organisations
-item_functions
-item_topics
-item_tags
-```
+PostgreSQL ist die zentrale lokale Laufzeitbasis von IMP.
 
-Die Datenbank dient:
+Es speichert:
 
-- Filterung
-- Volltextsuche
-- Graph-Navigation
-- Aggregation mehrerer Data-Repositories
-- Tages-/Sprint-Views
-- berechneten Hinweisen
+- native IMP-Objekte,
+- Projektionen externer Source Objects,
+- Kontextknoten,
+- Relationen,
+- Overlays,
+- Sync-/Drift-Zustände,
+- Sprints und Views.
 
-Sie ist zunächst **nicht Source of Truth**. Der Index muss aus den Data-Repositories neu aufgebaut werden können.
+Es ist jedoch **nicht automatisch fachliche Source of Truth aller externen Objekte**.
 
 Eine echte Graphdatenbank ist für den PoC nicht erforderlich.
