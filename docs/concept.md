@@ -17,7 +17,7 @@ Tages- oder Sprint-Auswahl
       ↓
 bei Bedarf Übergabe/Verweis
       ↓
-Jira / Outlook / Teams / Kalender / Git
+Jira / Outlook / Teams / Kalender / GitHub / SQL / YAML
 ```
 
 Die operative Arbeit bleibt dort, wo sie hingehört. IMP bildet die persönliche Steuerungsebene.
@@ -101,7 +101,7 @@ IMP modelliert seine Inhalte als Graph.
   ├─ Tag          → mit-ds-besprechen
   ├─ part_of      → AI-Infrastruktur
   ├─ depends_on   → anderes Item
-  └─ source       → Jira / Outlook / Git
+  └─ source       → Jira / Outlook / GitHub / SQL / YAML
 ```
 
 Eine Baumstruktur ist lediglich eine mögliche Sicht auf diesen Graphen.
@@ -149,7 +149,7 @@ Themen sind relativ stabil und gepflegt.
 
 ### Tags
 
-Freie situative Marker.
+Freie situative Marker, die dennoch als Lookup-Objekte mit stabiler ID geführt werden.
 
 Beispiele:
 
@@ -212,7 +212,89 @@ Review
 nächster Sprint
 ```
 
-## 9. Bestehende Systeme
+## 9. Föderierte Quellen statt einer globalen Wahrheit
+
+IMP erzwingt **keine einzige Source of Truth für alle Objekte**.
+
+Stattdessen bleibt die jeweilige Ursprungquelle fachlich führend:
+
+```text
+Jira-Ticket       -> Jira
+Outlook-Termin    -> Outlook / Kalender
+GitHub-Issue      -> GitHub
+YAML-Item         -> Data-Repository
+SQL-Datensatz     -> jeweilige SQL-Quelle
+natives IMP-Item  -> IMP PostgreSQL
+```
+
+IMP führt diese Quellen über Adapter zusammen.
+
+```text
+Sources
+  ↓
+Source Adapter
+  ↓
+Canonical IMP Model
+  ↓
+lokaler materialisierter Arbeitsgraph
+  ↓
+Tree / Filter / Sprint / Suche / Details
+```
+
+## 10. Source Object + IMP Overlay
+
+Ein externes Objekt besteht in IMP logisch aus zwei Schichten:
+
+```text
+Source Object
+      +
+IMP Overlay
+      =
+IMP Item View
+```
+
+Beispiel:
+
+```text
+Jira:
+Titel, Jira-Status, Due Date
+
+IMP ergänzt:
+Organisation, Funktion, Thema, Tags,
+persönliche Priorität, Sprint,
+Wiedervorlage, Notizen
+```
+
+Dadurch kann IMP persönliche Steuerungsinformationen ergänzen, ohne das externe System zu duplizieren oder dessen fachliche Autorität zu übernehmen.
+
+## 11. Drift, Löschung und verwaiste Einträge
+
+Quellen können sich ändern, nicht erreichbar sein oder Objekte löschen.
+
+IMP muss dies explizit sichtbar machen.
+
+Mögliche Source-Zustände:
+
+- `active` – Objekt wurde erfolgreich gefunden
+- `missing` – Objekt wurde bei erfolgreicher Synchronisation nicht gefunden
+- `stale` – Quelle wurde längere Zeit nicht erfolgreich geprüft
+- `error` – Quelle konnte nicht gelesen werden
+- `detached` – Verbindung wurde bewusst getrennt
+- `deleted` – Löschung an der Quelle wurde bestätigt
+
+Ein einmal fehlendes Objekt wird **nicht sofort gelöscht**.
+
+Mögliche Reparaturaktionen:
+
+- Quelle erneut prüfen
+- Referenz / External ID korrigieren
+- auf ein neues Source Object umhängen
+- als natives IMP-Item übernehmen
+- lokalen Eintrag bewusst entfernen
+
+Damit können IMP-Overlays, Notizen und Beziehungen erhalten bleiben, auch wenn ein externes Source Object verschwindet.
+
+## 12. Bestehende Systeme
 
 ```text
 Source-Systeme -> Was existiert?
@@ -220,11 +302,9 @@ IMP            -> Was ist jetzt relevant?
 Kalender       -> Wann wird es getan?
 ```
 
-IMP ersetzt Jira, Outlook, Teams, Kalender oder Git nicht.
+IMP ersetzt Jira, Outlook, Teams, Kalender, GitHub oder andere Quellsysteme nicht.
 
-Externe Systeme bleiben Source of Truth und werden referenziert statt vollständig dupliziert.
-
-## 10. Methoden als Bausteine
+## 13. Methoden als Bausteine
 
 IMP übernimmt keine Selbstmanagementmethode vollständig.
 
@@ -236,27 +316,28 @@ Nützliche Mechanismen:
 - **Time Blocking:** Ausführung im Kalender
 - **Weekly Review:** Pool und Fokus regelmäßig neu bewerten
 
-## 11. Speicherung und Anwendung
+## 14. Speicherung und Anwendung
 
-Führende Daten bleiben Markdown/YAML in Git-basierten Data-Repositories.
+PostgreSQL dient als:
 
-Mehrere Repositories erlauben unterschiedliche Berechtigungs- und Kollaborationsräume.
-
-Eine interne Anwendung darf daraus einen Datenbankindex für Suche, Filter, Graph-Navigation und Views erzeugen.
+- Heimat nativer IMP-Objekte,
+- lokaler materialisierter Index externer Quellen,
+- Arbeitsgraph für Beziehungen,
+- Speicher für IMP-Overlays,
+- Basis für Suche, Filter und Views.
 
 ```text
-Data-Repositories
-      ↓
-Parser / Indexer
-      ↓
-SQLite / PostgreSQL
-      ↓
-Web-UI / CLI / Agenten
+Jira ---------\
+Outlook -------\
+GitHub ---------+--> Adapter / Sync --> PostgreSQL --> FastAPI --> Vue
+YAML / Git -----/
+SQL ------------/
+IMP native -----/
 ```
 
-Die Datenbank bleibt zunächst rekonstruierbar und nicht Source of Truth.
+PostgreSQL ist damit nicht automatisch fachliche Source of Truth externer Objekte, sondern deren lokale Projektion innerhalb von IMP.
 
-## 12. Nicht-Ziele
+## 15. Nicht-Ziele
 
 IMP soll zunächst ausdrücklich nicht werden:
 
@@ -268,4 +349,4 @@ IMP soll zunächst ausdrücklich nicht werden:
 - universelle Workflow-Engine
 - weitere isolierte To-do-App
 
-Der Wert liegt in der dünnen persönlichen Steuerungs- und Strukturierungsschicht über einem heterogenen Arbeitsvorrat.
+Der Wert liegt in der persönlichen Steuerungs-, Aggregations- und Strukturierungsschicht über einem heterogenen Arbeitsvorrat.
