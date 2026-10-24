@@ -84,6 +84,7 @@ Externe Quellen behalten ihre jeweilige fachliche Autorität.
 - [Datenmodell](docs/data-model.md)
 - [Storage und Quellen](docs/storage.md)
 - [Beispiele](examples/)
+- [Umsetzung / lokaler Start](docs/implementation.md)
 
 ## Technische Arbeitsannahme
 
@@ -96,3 +97,15 @@ Für den ersten PoC:
 - Bootstrap 5
 
 Authentifizierung, Graph-Darstellung, konkrete Source Adapter und Detail-Schema bleiben noch offen.
+
+
+## Schnellstart
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Danach ist das Vue-Frontend unter `http://localhost:5173` und die FastAPI-Dokumentation unter `http://localhost:8000/docs` erreichbar.
+
+Der erste Vertical Slice unterstützt bereits schnelle Inbox-Erfassung, Baumfilter `Ich → Organisation → Funktion → Thema`, Item-Details, Tags, Delegation, Warten auf, Wiedervorlage und den persönlichen Sprint.
